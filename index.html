@@ -1,78 +1,185 @@
 <!DOCTYPE html>
-<html><head><meta charset="utf-8"><title>Road Risk Dashboard</title>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Road Risk Dashboard</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"></script>
-<style>body{font-family:Arial;max-width:900px;margin:20px auto;padding:0 10px}
-input,select,button{margin:3px;padding:6px}.box{border:1px solid #ccc;border-radius:8px;padding:12px;margin:12px 0}
-table{width:100%;border-collapse:collapse}td,th{border-bottom:1px solid #ddd;padding:5px;text-align:left}</style></head>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif;background:#f1f5f9;margin:0;color:#1f2937}
+header{background:linear-gradient(135deg,#1e3a8a,#3b82f6);color:#fff;padding:24px 16px;text-align:center}
+header h2{margin:0;font-size:26px}
+header p{margin:6px 0 0;opacity:.85}
+.wrap{max-width:960px;margin:0 auto;padding:0 12px}
+.box{background:#fff;border-radius:14px;padding:18px;margin:16px 0;box-shadow:0 4px 14px rgba(0,0,0,.08)}
+h3{margin-top:0;color:#1e3a8a}
+input,select{padding:8px;border:1px solid #cbd5e1;border-radius:8px;margin:4px}
+label.chk{margin:0 8px;white-space:nowrap}
+button{background:#2563eb;color:#fff;border:0;border-radius:8px;padding:9px 16px;margin:4px;cursor:pointer;font-weight:600}
+button:hover{opacity:.88}
+button.alt{background:#7c3aed}
+button.red{background:#dc2626}
+button.grey{background:#64748b}
+table{width:100%;border-collapse:collapse}
+th{background:#eff6ff;color:#1e3a8a;text-align:left;padding:8px}
+td{border-bottom:1px solid #e5e7eb;padding:8px}
+.badge{display:inline-block;color:#fff;border-radius:20px;padding:4px 14px;font-weight:700}
+.s1{background:#2e9e5b}.s2{background:#d4a017}.s3{background:#f07c1a}.s4{background:#d62839}
+.warn{background:#fff7ed;color:#c2410c;border-radius:8px;padding:4px 10px;margin-left:8px;font-size:14px}
+.up{color:#d62839;font-weight:700}.down{color:#2e9e5b;font-weight:700}
+.bar{display:flex;align-items:center;margin:4px 0}
+.bar span{width:90px}.bar b{width:50px;text-align:right}
+.track{flex:1;background:#e5e7eb;border-radius:6px}
+.fill{height:14px;border-radius:6px}
+#auth{max-width:420px;margin:40px auto;text-align:center}
+#auth input{width:80%}
+#msg{display:block;color:#dc2626;margin-top:6px}
+</style>
+</head>
 <body>
-<h2>Road Accident Risk Dashboard</h2>
+<header><h2>Road Accident Risk Dashboard</h2><p>Severity prediction to help prioritise road-safety investigations</p></header>
+<div class="wrap">
 
-    <div id="auth" class="box">
-      <input id="u" placeholder="Username"><input id="p" type="password" placeholder="Password">
-  <button onclick="auth('login')">Login</button><button onclick="auth('register')">Register</button>
+<div id="auth" class="box">
+  <h3>Officer Login</h3>
+  <input id="u" placeholder="Username"><br>
+  <input id="p" type="password" placeholder="Password"><br>
+  <button onclick="auth('login')">Login</button>
+  <button class="alt" onclick="auth('register')">Register</button>
   <span id="msg"></span>
 </div>
 
 <div id="app" style="display:none">
   <div class="box"><h3>Predict severity</h3>
     Hour <input id="hour" type="number" min="0" max="23" value="23" style="width:60px">
-    Day <select id="day"><option value="0">Mon</option><option value="1">Tue</option><option value="2">Wed</option>
-      <option value="3">Thu</option><option value="4">Fri</option><option value="5" selected>Sat</option><option value="6">Sun</option></select>
+    Day <select id="day">
+      <option value="0">Mon</option><option value="1">Tue</option><option value="2">Wed</option>
+      <option value="3">Thu</option><option value="4">Fri</option>
+      <option value="5" selected>Sat</option><option value="6">Sun</option>
+    </select>
     Temp(F) <input id="temp" type="number" value="60" style="width:70px">
     Humidity <input id="hum" type="number" value="70" style="width:70px">
     Visibility(mi) <input id="vis" type="number" value="10" style="width:70px"><br>
-    Weather <select id="weather"><option>Fair</option><option>Cloudy</option><option>Fog</option><option>Light Rain</option>
-      <option>Rain</option><option>Light Snow</option><option>Overcast</option><option>Partly Cloudy</option>
-      <option>Mostly Cloudy</option><option>Thunder in the Vicinity</option><option>Other</option></select>
-    <label><input type="checkbox" id="night" checked>Night</label>
-    <label><input type="checkbox" id="junc">Junction</label>
-    <label><input type="checkbox" id="sig">Traffic signal</label>
-    <label><input type="checkbox" id="cross">Crossing</label>
+    Weather <select id="weather">
+      <option>Fair</option><option>Cloudy</option><option>Fog</option><option>Light Rain</option>
+      <option>Rain</option><option>Light Snow</option><option>Overcast</option>
+      <option>Partly Cloudy</option><option>Mostly Cloudy</option>
+      <option>Thunder in the Vicinity</option><option>Other</option>
+    </select>
+    <label class="chk"><input type="checkbox" id="night" checked>Night</label>
+    <label class="chk"><input type="checkbox" id="junc">Junction</label>
+    <label class="chk"><input type="checkbox" id="sig">Traffic signal</label>
+    <label class="chk"><input type="checkbox" id="cross">Crossing</label><br>
     <button onclick="predict()">Predict</button>
-    <div id="result" style="margin-top:8px"></div>
+    <button class="alt" onclick="whatif()">What-if</button>
+    <button class="grey" onclick="location.reload()">Logout</button>
+    <div id="result" style="margin-top:10px"></div>
+    <div id="whatif" style="margin-top:10px"></div>
   </div>
 
-  <div class="box"><h3>Dashboard</h3><div style="max-width:500px"><canvas id="chart"></canvas></div></div>
+  <div class="box"><h3>Dashboard</h3>
+    <div style="max-width:560px"><canvas id="chart"></canvas></div>
+  </div>
 
   <div class="box"><h3>History</h3>
-    <table><thead><tr><th>Time</th><th>Severity</th><th>Confidence</th><th>Note</th><th></th></tr></thead>
-    <tbody id="rows"></tbody></table></div>
+    <table>
+      <thead><tr><th>Time</th><th>Severity</th><th>Confidence</th><th>Note</th><th></th></tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </div>
+</div>
 </div>
 
 <script>
 const $ = id => document.getElementById(id);
+const COL = {1: "#2e9e5b", 2: "#d4a017", 3: "#f07c1a", 4: "#d62839"};
 let T = "", chart;
+
 const api = async (path, method = "GET", body) => {
-  const r = await fetch(path, {method, headers: {"Content-Type": "application/json", token: T}, body: body && JSON.stringify(body)});
-  const j = await r.json(); if (!r.ok) throw j.detail; return j;
+  const r = await fetch(path, {method, headers: {"Content-Type": "application/json", token: T},
+                               body: body && JSON.stringify(body)});
+  const j = await r.json();
+  if (!r.ok) throw j.detail;
+  return j;
 };
+
 async function auth(a) {
   try {
     const j = await api("/" + a, "POST", {username: $("u").value, password: $("p").value});
-    if (a == "login") { T = j.token; $("auth").style.display = "none"; $("app").style.display = "block"; load(); }
-    else $("msg").textContent = "Registered. Now login.";
-  } catch (e) { $("msg").textContent = e; }
+    if (a == "login") {
+      T = j.token;
+      $("auth").style.display = "none";
+      $("app").style.display = "block";
+      load();
+    } else {
+      $("msg").style.color = "#2e9e5b";
+      $("msg").textContent = "Registered. Now login.";
+    }
+  } catch (e) { $("msg").style.color = "#dc2626"; $("msg").textContent = e; }
 }
+
+const inputs = () => ({
+  hour: +$("hour").value, day_of_week: +$("day").value, temperature: +$("temp").value,
+  humidity: +$("hum").value, visibility: +$("vis").value, weather: $("weather").value,
+  is_night: +$("night").checked, junction: +$("junc").checked,
+  traffic_signal: +$("sig").checked, crossing: +$("cross").checked});
+
 async function predict() {
   try {
-    const r = await api("/predict", "POST", {hour: +$("hour").value, day_of_week: +$("day").value,
-      temperature: +$("temp").value, humidity: +$("hum").value, visibility: +$("vis").value,
-      weather: $("weather").value, is_night: +$("night").checked, junction: +$("junc").checked,
-      traffic_signal: +$("sig").checked, crossing: +$("cross").checked});
-    $("result").innerHTML = `<b>Predicted severity: ${r.severity}</b> (confidence ${r.confidence})` +
-      (r.low_confidence ? " &#9888; Low confidence, do not rely on this alone" : "") + "<br>" +
-      Object.entries(r.probabilities).map(([k, v]) => `Severity ${k}: ${v}`).join(" | ");
+    const r = await api("/predict", "POST", inputs());
+    let h = "<span class='badge s" + r.severity + "'>Severity " + r.severity + "</span> confidence " + r.confidence;
+    if (r.low_confidence) h += "<span class='warn'>&#9888; Low confidence, do not rely on this alone</span>";
+    for (const [k, v] of Object.entries(r.probabilities)) {
+      const pct = Math.round(v * 100);
+      h += "<div class='bar'><span>Severity " + k + "</span><div class='track'><div class='fill s" + k +
+           "' style='width:" + pct + "%'></div></div><b>" + pct + "%</b></div>";
+    }
+    $("result").innerHTML = h;
     load();
   } catch (e) { $("result").textContent = e; }
 }
+
+async function whatif() {
+  try {
+    const base = {...inputs(), save: 0};
+    const tests = [["Your current inputs", {}], ["Daytime (hour 12)", {hour: 12, is_night: 0}],
+      ["Night (hour 23)", {hour: 23, is_night: 1}], ["Fog", {weather: "Fog"}],
+      ["Fair weather", {weather: "Fair"}], ["Visibility 1 mile", {visibility: 1}],
+      ["Traffic signal present", {traffic_signal: 1}],
+      ["No junction/signal/crossing", {junction: 0, traffic_signal: 0, crossing: 0}]];
+    const risk = async o => { const p = (await api("/predict", "POST", {...base, ...o})).probabilities;
+                              return Math.round((p["3"] + p["4"]) * 100); };
+    const b = await risk({});
+    let h = "<h4>What-if: chance of high severity (Severity 3 or 4)</h4><table><tr><th>Scenario</th><th>High-severity risk</th><th>Change</th></tr>";
+    for (const [name, o] of tests) {
+      const r = await risk(o), d = r - b;
+      const cls = d > 0 ? "up" : (d < 0 ? "down" : "");
+      h += "<tr><td>" + name + "</td><td>" + r + "%</td><td class='" + cls + "'>" +
+           (name == tests[0][0] ? "-" : (d > 0 ? "+" : "") + d + " pts") + "</td></tr>";
+    }
+    $("whatif").innerHTML = h + "</table>";
+  } catch (e) { $("whatif").textContent = e; }
+}
+
 async function load() {
   const h = await api("/history"), s = await api("/stats");
-  $("rows").innerHTML = h.map(x => `<tr><td>${x.created}</td><td>${x.severity}</td><td>${x.confidence}</td><td>${x.note}</td>
-    <td><button onclick="note(${x.id})">Note</button><button onclick="del(${x.id})">Delete</button></td></tr>`).join("");
+  $("rows").innerHTML = h.map(x => "<tr><td>" + x.created + "</td><td><span class='badge s" + x.severity + "'>" +
+    x.severity + "</span></td><td>" + x.confidence + "</td><td>" + x.note +
+    "</td><td><button class='alt' onclick='note(" + x.id + ")'>Note</button><button class='red' onclick='del(" +
+    x.id + ")'>Delete</button></td></tr>").join("");
   chart && chart.destroy();
-  chart = new Chart($("chart"), {type: "bar", data: {labels: ["Sev 1", "Sev 2", "Sev 3", "Sev 4"],
-    datasets: [{label: "My assessments", data: [1, 2, 3, 4].map(k => s.by_severity[k] || 0)}]}});
+  chart = new Chart($("chart"), {type: "bar",
+    data: {labels: ["Severity 1", "Severity 2", "Severity 3", "Severity 4"],
+           datasets: [{label: "My assessments", data: [1, 2, 3, 4].map(k => s.by_severity[k] || 0),
+                       backgroundColor: [COL[1], COL[2], COL[3], COL[4]], borderRadius: 8}]},
+    options: {plugins: {legend: {display: false}}, scales: {y: {beginAtZero: true, ticks: {precision: 0}}}}});
 }
-async function note(id) { const n = prompt("Note:"); if (n !== null) { await api("/history/" + id, "PUT", {note: n}); load(); } }
+
+async function note(id) {
+  const n = prompt("Note:");
+  if (n !== null) { await api("/history/" + id, "PUT", {note: n}); load(); }
+}
 async function del(id) { await api("/history/" + id, "DELETE"); load(); }
-</script></body></html>
+</script>
+</body>
+</html>

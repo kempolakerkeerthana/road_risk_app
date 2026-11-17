@@ -62,6 +62,7 @@ class Accident(BaseModel):
     stop: int = 0
     railway: int = 0
     is_night: int = 0
+    save: int = 1
 
 @app.post("/predict")
 def predict(a: Accident, token: str = Header(None)):
@@ -89,9 +90,10 @@ def predict(a: Accident, token: str = Header(None)):
            "confidence": round(float(p.max()), 2),
            "probabilities": {int(c): round(float(x), 2) for c, x in zip(model.classes_, p)},
            "low_confidence": bool(p.max() < 0.5)}
-    db.execute("INSERT INTO history(username,inputs,severity,confidence) VALUES(?,?,?,?)",
-               (user, a.model_dump_json(), out["severity"], out["confidence"]))
-    db.commit()
+    if a.save:
+        db.execute("INSERT INTO history(username,inputs,severity,confidence) VALUES(?,?,?,?)",
+                   (user, a.model_dump_json(), out["severity"], out["confidence"]))
+        db.commit()
     return out
 
 # ---- read / update / delete / dashboard ----
