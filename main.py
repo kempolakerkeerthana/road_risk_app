@@ -135,3 +135,8 @@ def stats(token: str = Header(None)):
     rows = db.execute("SELECT severity, COUNT(*) FROM history WHERE username=? GROUP BY severity",
                       (who(token),)).fetchall()
     return {"by_severity": {r[0]: r[1] for r in rows}}
+from fastapi.staticfiles import StaticFiles
+app.mount("/", StaticFiles(directory="road_risk_app", html=True), name="site")
+
+
+
