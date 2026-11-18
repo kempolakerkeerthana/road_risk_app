@@ -1,6 +1,8 @@
 from fastapi import FastAPI, Header, HTTPException
 from pydantic import BaseModel
 import joblib, pandas as pd, sqlite3, hashlib, secrets, json, os, time
+from fastapi.staticfiles import StaticFiles
+app.mount("/", StaticFiles(directory=".", html=True), name="site")
 
 model, cols = joblib.load("severity_model.pkl")
 
@@ -135,7 +137,4 @@ def stats(token: str = Header(None)):
     rows = db.execute("SELECT severity, COUNT(*) FROM history WHERE username=? GROUP BY severity",
                       (who(token),)).fetchall()
     return {"by_severity": {r[0]: r[1] for r in rows}}
-  from fastapi.staticfiles import StaticFiles
-app.mount("/", StaticFiles(directory=".", html=True), name="site")
-
-
+  
