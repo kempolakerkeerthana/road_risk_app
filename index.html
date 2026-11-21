@@ -1,196 +1,160 @@
 <!DOCTYPE html>
-<html>
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Road Risk Dashboard</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"></script>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Road Accident Severity Risk</title>
 <style>
-body{font-family:'Segoe UI',Arial,sans-serif;background:#f1f5f9;margin:0;color:#1f2937}
-header{background:linear-gradient(135deg,#1e3a8a,#3b82f6);color:#fff;padding:24px 16px;text-align:center}
-header h2{margin:0;font-size:26px}
-header p{margin:6px 0 0;opacity:.85}
-.wrap{max-width:960px;margin:0 auto;padding:0 12px}
-.box{background:#fff;border-radius:14px;padding:18px;margin:16px 0;box-shadow:0 4px 14px rgba(0,0,0,.08)}
-h3{margin-top:0;color:#1e3a8a}
-input,select{padding:8px;border:1px solid #cbd5e1;border-radius:8px;margin:4px}
-label.chk{margin:0 8px;white-space:nowrap}
-button{background:#2563eb;color:#fff;border:0;border-radius:8px;padding:9px 16px;margin:4px;cursor:pointer;font-weight:600}
-button:hover{opacity:.88}
-button.alt{background:#7c3aed}
-button.red{background:#dc2626}
-button.grey{background:#64748b}
-table{width:100%;border-collapse:collapse}
-th{background:#eff6ff;color:#1e3a8a;text-align:left;padding:8px}
-td{border-bottom:1px solid #e5e7eb;padding:8px}
-.badge{display:inline-block;color:#fff;border-radius:20px;padding:4px 14px;font-weight:700}
-.s1{background:#2e9e5b}.s2{background:#d4a017}.s3{background:#f07c1a}.s4{background:#d62839}
-.warn{background:#fff7ed;color:#c2410c;border-radius:8px;padding:4px 10px;margin-left:8px;font-size:14px}
-.up{color:#d62839;font-weight:700}.down{color:#2e9e5b;font-weight:700}
-.bar{display:flex;align-items:center;margin:4px 0}
-.bar span{width:90px}.bar b{width:50px;text-align:right}
-.track{flex:1;background:#e5e7eb;border-radius:6px}
-.fill{height:14px;border-radius:6px}
-#auth{max-width:420px;margin:40px auto;text-align:center}
-#auth input{width:80%}
-#auth small{display:block;color:#64748b;margin-top:8px}
-#msg{display:block;color:#dc2626;margin-top:6px}
-</style>
-</head>
-<body>
-<header><h2>Road Accident Risk Dashboard</h2><p>Severity prediction to help prioritise road-safety investigations</p></header>
-<div class="wrap">
+*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:58px}
+body{margin:0;font-family:Segoe UI,Arial,sans-serif;background:#f1f5f9;color:#0f172a}
+header{position:sticky;top:0;z-index:5;background:#0f172a;color:#fff;padding:10px 22px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+header h1{font-size:18px;margin:0}nav a{color:#fff;text-decoration:none;margin-left:14px;font-size:14px;padding:4px 8px;border-radius:6px}nav a:hover,nav a.on{background:#2563eb}
+main{max-width:1000px;margin:18px auto;padding:0 14px}
+.card{background:#fff;border-radius:10px;padding:18px;margin-bottom:16px;box-shadow:0 1px 4px #0002}
+h2{margin:0 0 10px;font-size:19px}h3{margin:14px 0 6px;font-size:15px}
+label{display:block;font-size:12px;color:#475569;margin:8px 0 2px}
+input,select,button{font:inherit;padding:7px 9px;border:1px solid #cbd5e1;border-radius:6px}
+button{background:#2563eb;color:#fff;border:0;cursor:pointer}button.alt{background:#64748b}button.red{background:#dc2626}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:0 12px}
+.checks label{display:inline-block;margin-right:14px;color:#0f172a;font-size:14px}.checks input{width:auto}
+.badge{display:inline-block;padding:6px 14px;border-radius:20px;color:#fff;font-weight:700}
+.s1{background:#16a34a}.s2{background:#ca8a04}.s3{background:#ea580c}.s4{background:#dc2626}
+.warn{background:#fef3c7;border-left:4px solid #f59e0b;padding:8px 10px;margin-top:10px;font-size:14px}
+.row{display:flex;align-items:center;gap:8px;margin:3px 0;font-size:13px}.lab{width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bar{flex:1;background:#e2e8f0;border-radius:4px;height:14px}.bar i{display:block;height:100%;background:#2563eb;border-radius:4px}
+table{border-collapse:collapse;width:100%;font-size:13px}th,td{border-bottom:1px solid #e2e8f0;padding:6px;text-align:left}
+.msg{color:#dc2626;font-size:14px;margin-top:8px}.small{font-size:12px;color:#64748b}
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:18px}
+</style></head><body>
+<header><h1>Road Accident Severity Risk</h1>
+<nav><a href="#" data-t="predict" class="on">Predict</a><a href="#" data-t="analysis">Analysis</a></nav></header>
+<main>
 
-<div id="auth" class="box">
-  <h3>Officer Login</h3>
-  <input id="u" placeholder="Username"><br>
-  <input id="p" type="password" placeholder="Password"><br>
-  <input id="inv" type="password" placeholder="Invite code (for Register only)"><br>
-  <button onclick="auth('login')">Login</button>
-  <button class="alt" onclick="auth('register')">Register</button>
-  <small>Registration is only for approved officers. Ask your administrator for the invite code.</small>
-  <span id="msg"></span>
+<section id="predict" class="card"><h2>Predict accident severity</h2>
+ <div class="grid">
+  <div><label>Hour (0-23)</label><input id="hour" type="number" min="0" max="23" value="23"></div>
+  <div><label>Day</label><select id="day"><option value="0">Mon</option><option value="1">Tue</option><option value="2">Wed</option><option value="3">Thu</option><option value="4">Fri</option><option value="5" selected>Sat</option><option value="6">Sun</option></select></div>
+  <div><label>Temperature (F)</label><input id="temp" type="number" value="60"></div>
+  <div><label>Humidity (%)</label><input id="hum" type="number" value="70"></div>
+  <div><label>Visibility (miles)</label><input id="vis" type="number" value="10"></div>
+  <div><label>Wind speed (mph)</label><input id="wind" type="number" value="0"></div>
+  <div><label>Precipitation (in)</label><input id="prec" type="number" step="0.01" value="0"></div>
+  <div><label>Weather</label><select id="weather"></select></div>
+  <div><label>State</label><select id="state"></select></div>
+ </div>
+ <div class="checks" style="margin-top:10px">
+  <label><input type="checkbox" id="is_night" checked> Night</label><label><input type="checkbox" id="junction"> Junction</label>
+  <label><input type="checkbox" id="traffic_signal"> Traffic signal</label><label><input type="checkbox" id="crossing"> Crossing</label>
+  <label><input type="checkbox" id="stop"> Stop sign</label><label><input type="checkbox" id="railway"> Railway</label></div>
+ <div id="stnote" class="warn" style="display:none">The model was trained on US accident data only and has no Indian data. For an Indian state the location is ignored and the score is an average over US locations. Time, weather and road features still count.</div>
+ <p><button id="pred">Predict</button> <button id="whatif" class="alt">What-if table</button></p>
+ <div id="result"></div><div id="wi"></div>
+</section>
+
+<div id="tab-analysis" style="display:none">
+<section id="dash" class="card"><h2>Dashboard</h2>
+ <div id="cards" class="small"></div><div id="dchart"></div>
+ <h3>Saved predictions</h3><div id="hist"></div>
+</section>
+
+<section id="analysis" class="card"><h2>Data and model analysis</h2><div id="an" class="small">Loading...</div></section>
 </div>
 
-<div id="app" style="display:none">
-  <div class="box"><h3>Predict severity</h3>
-    Hour <input id="hour" type="number" min="0" max="23" value="23" style="width:60px">
-    Day <select id="day">
-      <option value="0">Mon</option><option value="1">Tue</option><option value="2">Wed</option>
-      <option value="3">Thu</option><option value="4">Fri</option>
-      <option value="5" selected>Sat</option><option value="6">Sun</option>
-    </select>
-    Temp(F) <input id="temp" type="number" value="60" style="width:70px">
-    Humidity <input id="hum" type="number" value="70" style="width:70px">
-    Visibility(mi) <input id="vis" type="number" value="10" style="width:70px"><br>
-    Weather <select id="weather">
-      <option>Fair</option><option>Cloudy</option><option>Fog</option><option>Light Rain</option>
-      <option>Rain</option><option>Light Snow</option><option>Overcast</option>
-      <option>Partly Cloudy</option><option>Mostly Cloudy</option>
-      <option>Thunder in the Vicinity</option><option>Other</option>
-    </select>
-    <label class="chk"><input type="checkbox" id="night" checked>Night</label>
-    <label class="chk"><input type="checkbox" id="junc">Junction</label>
-    <label class="chk"><input type="checkbox" id="sig">Traffic signal</label>
-    <label class="chk"><input type="checkbox" id="cross">Crossing</label><br>
-    <button onclick="predict()">Predict</button>
-    <button class="alt" onclick="whatif()">What-if</button>
-    <button class="grey" onclick="location.reload()">Logout</button>
-    <div id="result" style="margin-top:10px"></div>
-    <div id="whatif" style="margin-top:10px"></div>
-  </div>
-
-  <div class="box"><h3>Dashboard</h3>
-    <div style="max-width:560px"><canvas id="chart"></canvas></div>
-  </div>
-
-  <div class="box"><h3>History</h3>
-    <table>
-      <thead><tr><th>Time</th><th>Severity</th><th>Confidence</th><th>Note</th><th></th></tr></thead>
-      <tbody id="rows"></tbody>
-    </table>
-  </div>
-</div>
-</div>
+</main>
 
 <script>
-const $ = id => document.getElementById(id);
-const COL = {1: "#2e9e5b", 2: "#d4a017", 3: "#f07c1a", 4: "#d62839"};
-let T = "", chart;
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const WEATHER=["Fair","Clear","Mostly Cloudy","Partly Cloudy","Cloudy","Overcast","Light Rain","Rain","Fog","Light Snow","Haze","Thunderstorm"];
+const STATES=["CA","FL","TX","SC","NY","NC","PA","VA","MN","OR","AZ","IL","GA","OH","MI","WA"];
+$("weather").innerHTML=WEATHER.map(w=>`<option>${w}</option>`).join("");
+const INDIA=["Andhra Pradesh","Arunachal Pradesh","Assam","Bihar","Chhattisgarh","Delhi","Goa","Gujarat","Haryana","Himachal Pradesh","Jharkhand","Karnataka","Kerala","Madhya Pradesh","Maharashtra","Manipur","Meghalaya","Mizoram","Nagaland","Odisha","Punjab","Rajasthan","Sikkim","Tamil Nadu","Telangana","Tripura","Uttar Pradesh","Uttarakhand","West Bengal"];
+$("state").innerHTML=`<optgroup label="US states">${STATES.map(w=>`<option>${w}</option>`).join("")}</optgroup><optgroup label="Indian states">${INDIA.map(w=>`<option>${w}</option>`).join("")}</optgroup>`;
+$("state").onchange=()=>{$("stnote").style.display=INDIA.includes($("state").value)?"block":"none";};
+// ---- tabs: Predict | Analysis (dashboard + analysis together) ----
+document.querySelectorAll("nav a[data-t]").forEach(a=>a.onclick=e=>{e.preventDefault();showTab(a.dataset.t);});
+function showTab(t){
+  $("predict").style.display=t==="predict"?"block":"none";
+  $("tab-analysis").style.display=t==="analysis"?"block":"none";
+  document.querySelectorAll("nav a[data-t]").forEach(a=>a.classList.toggle("on",a.dataset.t===t));
+  if(t==="analysis"){loadDash();loadAnalysis();}
+  window.scrollTo(0,0);
+}
 
-const api = async (path, method = "GET", body) => {
-  const r = await fetch(path, {method, headers: {"Content-Type": "application/json", token: T},
-                               body: body && JSON.stringify(body)});
-  const j = await r.json();
-  // session expired (after 1 hour) -> send the officer back to login
-  if (r.status === 401 && T) {
-    alert("Session expired. Please login again.");
-    location.reload();
-    throw "Session expired";
-  }
-  if (!r.ok) throw (typeof j.detail === "string" ? j.detail : "Invalid input");
-  return j;
+async function api(path,method="GET",body){
+  const r=await fetch(path,{method,headers:{"Content-Type":"application/json"},body:body?JSON.stringify(body):undefined});
+  const d=await r.json().catch(()=>({}));
+  if(!r.ok) throw new Error(typeof d.detail==="string"?d.detail:"Check your inputs");
+  return d;
+}
+function bars(data,title,fmt){
+  const e=Object.entries(data),max=Math.max(...e.map(x=>x[1]),1);
+  return (title?`<h3>${title}</h3>`:"")+e.map(([k,v])=>`<div class="row"><span class="lab" title="${esc(k)}">${esc(k)}</span><div class="bar"><i style="width:${v/max*100}%"></i></div><span>${fmt?fmt(v):v}</span></div>`).join("");
+}
+
+// ---- predict + what-if ----
+const ids=["is_night","junction","traffic_signal","crossing","stop","railway"];
+function inputs(){
+  const o={hour:+$("hour").value,day_of_week:+$("day").value,temperature:+$("temp").value,humidity:+$("hum").value,
+    visibility:+$("vis").value,wind_speed:+$("wind").value,precipitation:+$("prec").value,weather:$("weather").value,state:$("state").value};
+  ids.forEach(i=>o[i]=$(i).checked?1:0); return o;
+}
+const NAMES={1:"Severity 1 (minor)",2:"Severity 2",3:"Severity 3",4:"Severity 4 (most serious)"};
+$("pred").onclick=async()=>{
+  try{
+    const r=await api("/predict","POST",{...inputs(),save:1});
+    $("result").innerHTML=`<h3>Result</h3><span class="badge s${r.severity}">${NAMES[r.severity]}</span> &nbsp; confidence ${Math.round(r.confidence*100)}%`+
+      bars(Object.fromEntries(Object.entries(r.probabilities).map(([k,v])=>["Severity "+k,Math.round(v*100)])),"",v=>v+"%")+
+      (r.low_confidence?`<div class="warn">Low confidence: no single severity is clearly likely. Treat this as a rough guide only.</div>`:"")+
+      `<div class="small">Saved. See it under Analysis. Percentages are model scores, not real-world probabilities.</div>`;
+  }catch(e){$("result").innerHTML=`<div class="msg">${esc(e.message)}</div>`;}
+};
+$("whatif").onclick=async()=>{
+  const b=inputs(), sc=[["Your current inputs",{}],["Daytime (hour 12)",{hour:12,is_night:0}],["Night (hour 23)",{hour:23,is_night:1}],
+    ["Rush hour (hour 17)",{hour:17,is_night:0}],["Fog, visibility 1 mile",{weather:"Fog",visibility:1}],["Rain",{weather:"Rain"}],
+    ["Traffic signal present",{traffic_signal:1}],["No junction/signal/crossing",{junction:0,traffic_signal:0,crossing:0}]];
+  try{
+    const res=[];for(const [n,c] of sc){res.push([n,await api("/predict","POST",{...b,...c,save:0})]);}
+    const base=res[0][1].high_severity_risk;
+    $("wi").innerHTML=`<h3>What-if: chance of a serious accident (Severity 3 or 4)</h3><table><tr><th>Scenario</th><th>Risk</th><th>Change</th><th>Most likely</th></tr>`+
+      res.map(([n,r],i)=>{const d=Math.round((r.high_severity_risk-base)*100);
+        return `<tr><td>${n}</td><td>${Math.round(r.high_severity_risk*100)}%</td><td>${i?(d>0?"+":"")+d+" pts":"-"}</td><td><span class="badge s${r.severity}" style="padding:2px 8px">${r.severity}</span></td></tr>`}).join("")+
+      `</table><div class="small">Shows how the model's score moves when one thing changes. It shows model behaviour, not proven cause.</div>`;
+  }catch(e){$("wi").innerHTML=`<div class="msg">${esc(e.message)}</div>`;}
 };
 
-async function auth(a) {
-  try {
-    const j = await api("/" + a, "POST",
-      {username: $("u").value, password: $("p").value, invite: $("inv").value});
-    if (a == "login") {
-      T = j.token;
-      $("auth").style.display = "none";
-      $("app").style.display = "block";
-      load();
-    } else {
-      $("msg").style.color = "#2e9e5b";
-      $("msg").textContent = "Registered. Now login.";
-    }
-  } catch (e) { $("msg").style.color = "#dc2626"; $("msg").textContent = e; }
+// ---- dashboard + saved predictions (store / retrieve / update / delete) ----
+async function loadDash(){
+  try{
+    const [s,h]=await Promise.all([api("/stats"),api("/history")]);
+    const by=s.by_severity,tot=Object.values(by).reduce((a,b)=>a+b,0);
+    $("cards").innerHTML=`<b style="font-size:22px;color:#0f172a">${tot}</b> saved predictions`;
+    $("dchart").innerHTML=tot?bars(Object.fromEntries([1,2,3,4].map(k=>["Severity "+k,by[k]||0])),"Saved predictions by severity"):"<p>No saved predictions yet. Make one on the Predict page.</p>";
+    $("hist").innerHTML=h.length?`<table><tr><th>When</th><th>Severity</th><th>Conf.</th><th>Inputs</th><th>Note</th><th></th></tr>`+h.map(r=>{const i=r.inputs;
+      return `<tr><td>${esc(r.created)}</td><td><span class="badge s${r.severity}" style="padding:2px 8px">${r.severity}</span></td><td>${Math.round(r.confidence*100)}%</td>
+      <td class="small">hr ${i.hour}, ${esc(i.weather)}, ${esc(i.state)}</td><td><input value="${esc(r.note)}" data-id="${r.id}" class="note" style="width:130px"></td>
+      <td><button class="red" data-del="${r.id}">Delete</button></td></tr>`}).join("")+"</table>":"<p>Nothing saved yet.</p>";
+    document.querySelectorAll(".note").forEach(n=>n.onchange=()=>api("/history/"+n.dataset.id,"PUT",{note:n.value}));
+    document.querySelectorAll("[data-del]").forEach(b=>b.onclick=async()=>{await api("/history/"+b.dataset.del,"DELETE");loadDash();});
+  }catch(e){$("cards").innerHTML=`<div class="msg">${esc(e.message)}</div>`;}
 }
 
-const inputs = () => ({
-  hour: +$("hour").value, day_of_week: +$("day").value, temperature: +$("temp").value,
-  humidity: +$("hum").value, visibility: +$("vis").value, weather: $("weather").value,
-  is_night: +$("night").checked, junction: +$("junc").checked,
-  traffic_signal: +$("sig").checked, crossing: +$("cross").checked});
-
-async function predict() {
-  try {
-    const r = await api("/predict", "POST", inputs());
-    let h = "<span class='badge s" + r.severity + "'>Severity " + r.severity + "</span> confidence " + r.confidence;
-    if (r.low_confidence) h += "<span class='warn'>&#9888; Low confidence, do not rely on this alone</span>";
-    for (const [k, v] of Object.entries(r.probabilities)) {
-      const pct = Math.round(v * 100);
-      h += "<div class='bar'><span>Severity " + k + "</span><div class='track'><div class='fill s" + k +
-           "' style='width:" + pct + "%'></div></div><b>" + pct + "%</b></div>";
-    }
-    $("result").innerHTML = h;
-    load();
-  } catch (e) { $("result").textContent = e; }
+// ---- analysis (numbers come from analysis.json made by train_model.py) ----
+async function loadAnalysis(){
+  try{
+    const a=await api("/analysis");
+    $("an").innerHTML=`<p>Dataset: ${a.rows.toLocaleString()} US accident records. Model: ${esc(a.model)}. Test accuracy ${a.accuracy}, macro-F1 ${a.tuned_macro_f1}.</p>
+    <div class="two"><div>${bars(a.severity,"Severity counts")}</div><div>${bars(a.by_hour,"Accidents by hour of day")}</div>
+    <div>${bars(a.top_states,"Top 10 states")}</div><div>${bars(a.timezones,"Accidents by timezone")}</div>
+    <div>${bars(a.top_weather,"Top 10 weather conditions")}</div><div>${bars(a.top_streets,"Top 10 streets")}</div>
+    <div>${bars(a.night_share_by_weather,"Share of accidents at night, by weather (%)",v=>v+"%")}</div>
+    <div>${bars(a.model_scores,"Model comparison (macro-F1)")}</div>
+    <div>${bars(Object.fromEntries(Object.entries(a.importance).map(([k,v])=>[k,+(v*1000).toFixed(1)])),"Main risk factors (importance x1000)")}</div></div>
+    <h3>Per-class result on the test set</h3><table><tr><th>Severity</th><th>Precision</th><th>Recall</th><th>F1</th></tr>`+
+    Object.entries(a.per_class).map(([k,v])=>`<tr><td>${k}</td><td>${v.precision}</td><td>${v.recall}</td><td>${v["f1-score"]}</td></tr>`).join("")+`</table>
+    <h3>Confusion matrix (rows = actual, columns = predicted)</h3><table><tr><th></th>${[1,2,3,4].map(k=>`<th>${k}</th>`).join("")}</tr>`+
+    a.confusion.map((r,i)=>`<tr><th>${i+1}</th>${r.map(v=>`<td>${v}</td>`).join("")}</tr>`).join("")+`</table>
+    <h3>Patterns found in past accidents ("if A then B")</h3><table><tr><th>If</th><th>Then</th><th>Confidence</th><th>Lift</th></tr>`+
+    a.rules.map(r=>`<tr><td>${esc(r.if)}</td><td>${esc(r.then)}</td><td>${Math.round(r.confidence*100)}%</td><td>${r.lift}</td></tr>`).join("")+`</table>
+    <p class="small">Lift near 1 means the pattern is no stronger than chance (most accidents happen in daylight anyway).</p>
+    <div class="warn">Limits: Severity 1 and 4 are rare in the data, so the model is weak on them. Scores are relative risk, not real-world probabilities. Results show links in this dataset, not proven causes.</div>`;
+  }catch(e){$("an").innerHTML=`<div class="msg">${esc(e.message)}. Run train_model.py first.</div>`;}
 }
-
-async function whatif() {
-  try {
-    // save: 0 -> backend does NOT store what-if runs in History
-    const base = {...inputs(), save: 0};
-    const tests = [["Your current inputs", {}], ["Daytime (hour 12)", {hour: 12, is_night: 0}],
-      ["Night (hour 23)", {hour: 23, is_night: 1}], ["Fog", {weather: "Fog"}],
-      ["Fair weather", {weather: "Fair"}], ["Visibility 1 mile", {visibility: 1}],
-      ["Traffic signal present", {traffic_signal: 1}],
-      ["No junction/signal/crossing", {junction: 0, traffic_signal: 0, crossing: 0}]];
-    const risk = async o => { const p = (await api("/predict", "POST", {...base, ...o})).probabilities;
-                              return Math.round((p["3"] + p["4"]) * 100); };
-    const b = await risk({});
-    let h = "<h4>What-if: chance of high severity (Severity 3 or 4)</h4><table><tr><th>Scenario</th><th>High-severity risk</th><th>Change</th></tr>";
-    for (const [name, o] of tests) {
-      const r = await risk(o), d = r - b;
-      const cls = d > 0 ? "up" : (d < 0 ? "down" : "");
-      h += "<tr><td>" + name + "</td><td>" + r + "%</td><td class='" + cls + "'>" +
-           (name == tests[0][0] ? "-" : (d > 0 ? "+" : "") + d + " pts") + "</td></tr>";
-    }
-    $("whatif").innerHTML = h + "</table>";
-  } catch (e) { $("whatif").textContent = e; }
-}
-
-async function load() {
-  const h = await api("/history"), s = await api("/stats");
-  $("rows").innerHTML = h.map(x => "<tr><td>" + x.created + "</td><td><span class='badge s" + x.severity + "'>" +
-    x.severity + "</span></td><td>" + x.confidence + "</td><td>" + x.note +
-    "</td><td><button class='alt' onclick='note(" + x.id + ")'>Note</button><button class='red' onclick='del(" +
-    x.id + ")'>Delete</button></td></tr>").join("");
-  chart && chart.destroy();
-  chart = new Chart($("chart"), {type: "bar",
-    data: {labels: ["Severity 1", "Severity 2", "Severity 3", "Severity 4"],
-           datasets: [{label: "My assessments", data: [1, 2, 3, 4].map(k => s.by_severity[k] || 0),
-                       backgroundColor: [COL[1], COL[2], COL[3], COL[4]], borderRadius: 8}]},
-    options: {plugins: {legend: {display: false}}, scales: {y: {beginAtZero: true, ticks: {precision: 0}}}}});
-}
-
-async function note(id) {
-  const n = prompt("Note:");
-  if (n !== null) { await api("/history/" + id, "PUT", {note: n}); load(); }
-}
-async function del(id) { await api("/history/" + id, "DELETE"); load(); }
-</script>
-</body>
-</html>
+</script></body></html>

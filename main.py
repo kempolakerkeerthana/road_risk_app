@@ -1,67 +1,36 @@
-from fastapi import FastAPI, Header, HTTPException
-from pydantic import BaseModel
-import joblib, pandas as pd, sqlite3, hashlib, secrets, json, os, time
-from fastapi.staticfiles import StaticFiles
-app.mount("/", StaticFiles(directory=".", html=True), name="site")
+from fastapi import FastAPI, HTTPException
+from fastapi.responses import FileResponse
+from pydantic import BaseModel, Field
+import joblib, pandas as pd, sqlite3, json, os
+import features as F
 
 model, cols = joblib.load("severity_model.pkl")
+WEATHERS = F.known(cols, "Weather_Condition_")
+STATES = F.known(cols, "State_")
 
-# hide /docs, /redoc and /openapi.json from the public
-app = FastAPI(title="Road Risk API", docs_url=None, redoc_url=None, openapi_url=None)
+app = FastAPI(title="Road Risk API")          # /docs stays open (sir's steps 6 and 12)
 
-# secret code only approved officers know (set INVITE_CODE on Render > Environment)
-INVITE_CODE = os.getenv("INVITE_CODE", "change-me-123")
-SESSION_SECONDS = 60 * 60          # sessions expire after 1 hour
-
-# ---- database ----
+# ---- database (no login: one shared prediction history) ----
 db = sqlite3.connect("app.db", check_same_thread=False)
-db.execute("CREATE TABLE IF NOT EXISTS users(username TEXT PRIMARY KEY, pw TEXT)")
-db.execute("""CREATE TABLE IF NOT EXISTS history(id INTEGER PRIMARY KEY, username TEXT,
-              inputs TEXT, severity INT, confidence REAL, note TEXT DEFAULT '',
+db.execute("""CREATE TABLE IF NOT EXISTS predictions(id INTEGER PRIMARY KEY, inputs TEXT,
+              severity INT, confidence REAL, note TEXT DEFAULT '',
               created TEXT DEFAULT CURRENT_TIMESTAMP)""")
-sessions = {}
 
-# ---- register / login ----
-class Auth(BaseModel):
-    username: str
-    password: str
-    invite: str = ""               # only needed for register
 
-def hp(pw, salt):
-    return hashlib.pbkdf2_hmac("sha256", pw.encode(), salt.encode(), 100000).hex()
+# ---- home page + health check ----
+@app.get("/", include_in_schema=False)
+def home():
+    return FileResponse("index.html")
 
-def who(token):
-    s = sessions.get(token)
-    if not s or time.time() > s["expires"]:
-        sessions.pop(token, None)
-        raise HTTPException(401, "Please login first")
-    return s["user"]
+@app.get("/health")
+def health():
+    return {"status": "ok", "model_classes": [int(c) for c in model.classes_]}
 
-@app.post("/register")
-def register(a: Auth):
-    if a.invite != INVITE_CODE:
-        raise HTTPException(403, "Invalid invite code. Only approved officers can register")
-    salt = secrets.token_hex(8)
-    try:
-        db.execute("INSERT INTO users VALUES(?,?)", (a.username, salt + "$" + hp(a.password, salt)))
-        db.commit()
-    except sqlite3.IntegrityError:
-        raise HTTPException(400, "Username already taken")
-    return {"message": "Registered"}
 
-@app.post("/login")
-def login(a: Auth):
-    row = db.execute("SELECT pw FROM users WHERE username=?", (a.username,)).fetchone()
-    if not row or row[0].split("$")[1] != hp(a.password, row[0].split("$")[0]):
-        raise HTTPException(401, "Wrong username or password")
-    t = secrets.token_hex(16)
-    sessions[t] = {"user": a.username, "expires": time.time() + SESSION_SECONDS}
-    return {"token": t}
-
-# ---- prediction (saved to database unless save=0) ----
+# ---- prediction (saved to history unless save=0) ----
 class Accident(BaseModel):
-    hour: int
-    day_of_week: int          # 0=Mon ... 6=Sun
+    hour: int = Field(ge=0, le=23)
+    day_of_week: int = Field(ge=0, le=6)          # 0=Mon ... 6=Sun
     temperature: float
     humidity: float
     visibility: float
@@ -75,66 +44,68 @@ class Accident(BaseModel):
     stop: int = 0
     railway: int = 0
     is_night: int = 0
-    save: int = 1             # 0 = what-if only, do not store in history
+    save: int = 1                                 # 0 = what-if only, do not store
 
 @app.post("/predict")
-def predict(a: Accident, token: str = Header(None)):
-    user = who(token)
-    r = dict.fromkeys(cols, 0)
-    road = a.junction + a.traffic_signal + a.crossing + a.stop + a.railway
-    bad = int(any(w in a.weather.lower() for w in
-              ["rain", "snow", "fog", "storm", "haze", "thunder", "drizzle", "sleet"]))
-    r.update({"Temperature(F)": a.temperature, "Humidity(%)": a.humidity,
-              "Visibility(mi)": a.visibility, "Wind_Speed(mph)": a.wind_speed,
-              "Precipitation(in)": a.precipitation, "Junction": a.junction,
-              "Traffic_Signal": a.traffic_signal, "Crossing": a.crossing,
-              "Stop": a.stop, "Railway": a.railway, "Hour": a.hour,
-              "DayOfWeek": a.day_of_week, "Is_Night": a.is_night,
-              "Is_Weekend": int(a.day_of_week >= 5),
-              "Is_Rush_Hour": int(a.hour in [7, 8, 9, 16, 17, 18, 19]),
-              "Low_Visibility": int(a.visibility < 2), "Bad_Weather": bad,
-              "Night_Bad_Weather": a.is_night * bad, "Road_Complexity": road})
-    s = "State_" + a.state
-    r[s if s in r else "State_CA"] = 1
-    w = "Weather_Condition_" + a.weather
-    r[w if w in r else "Weather_Condition_Other"] = 1
-    p = model.predict_proba(pd.DataFrame([r])[cols])[0]
+def predict(a: Accident):
+    raw = pd.DataFrame([{
+        "Hour": a.hour, "DayOfWeek": a.day_of_week, "Temperature(F)": a.temperature,
+        "Humidity(%)": a.humidity, "Visibility(mi)": a.visibility,
+        "Wind_Speed(mph)": a.wind_speed, "Precipitation(in)": a.precipitation,
+        "Junction": a.junction, "Traffic_Signal": a.traffic_signal, "Crossing": a.crossing,
+        "Stop": a.stop, "Railway": a.railway, "Is_Night": a.is_night,
+        "Weather_Condition": a.weather, "State": a.state}])
+    if len(a.state) != 2:
+        # not a US state code (for example an Indian state): the model has no data for it,
+        # so ignore location and average the score over the US locations it knows
+        raw = pd.concat([raw] * len(STATES), ignore_index=True)
+        raw["State"] = STATES
+    x = F.prepare(raw, {}, WEATHERS, STATES, cols)      # same feature code as training
+    p = model.predict_proba(x).mean(axis=0)
+    probs = {int(c): round(float(v), 2) for c, v in zip(model.classes_, p)}
     out = {"severity": int(model.classes_[p.argmax()]),
            "confidence": round(float(p.max()), 2),
-           "probabilities": {int(c): round(float(x), 2) for c, x in zip(model.classes_, p)},
+           "probabilities": probs,
+           "high_severity_risk": round(probs.get(3, 0) + probs.get(4, 0), 2),
            "low_confidence": bool(p.max() < 0.5)}
     if a.save:
-        db.execute("INSERT INTO history(username,inputs,severity,confidence) VALUES(?,?,?,?)",
-                   (user, a.model_dump_json(), out["severity"], out["confidence"]))
+        db.execute("INSERT INTO predictions(inputs,severity,confidence) VALUES(?,?,?)",
+                   (a.model_dump_json(), out["severity"], out["confidence"]))
         db.commit()
     return out
+
 
 # ---- read / update / delete / dashboard ----
 class Note(BaseModel):
     note: str
 
 @app.get("/history")
-def history(token: str = Header(None)):
-    rows = db.execute("SELECT id,inputs,severity,confidence,note,created FROM history "
-                      "WHERE username=? ORDER BY id DESC", (who(token),)).fetchall()
+def history():
+    rows = db.execute("SELECT id,inputs,severity,confidence,note,created FROM predictions ORDER BY id DESC").fetchall()
     return [{"id": r[0], "inputs": json.loads(r[1]), "severity": r[2],
              "confidence": r[3], "note": r[4], "created": r[5]} for r in rows]
 
 @app.put("/history/{hid}")
-def update(hid: int, n: Note, token: str = Header(None)):
-    db.execute("UPDATE history SET note=? WHERE id=? AND username=?", (n.note, hid, who(token)))
+def update(hid: int, n: Note):
+    db.execute("UPDATE predictions SET note=? WHERE id=?", (n.note, hid))
     db.commit()
     return {"message": "Updated"}
 
 @app.delete("/history/{hid}")
-def delete(hid: int, token: str = Header(None)):
-    db.execute("DELETE FROM history WHERE id=? AND username=?", (hid, who(token)))
+def delete(hid: int):
+    db.execute("DELETE FROM predictions WHERE id=?", (hid,))
     db.commit()
     return {"message": "Deleted"}
 
 @app.get("/stats")
-def stats(token: str = Header(None)):
-    rows = db.execute("SELECT severity, COUNT(*) FROM history WHERE username=? GROUP BY severity",
-                      (who(token),)).fetchall()
+def stats():
+    rows = db.execute("SELECT severity, COUNT(*) FROM predictions GROUP BY severity").fetchall()
     return {"by_severity": {r[0]: r[1] for r in rows}}
-  
+
+
+# ---- analysis page data (made by train_model.py from the notebook's analysis) ----
+@app.get("/analysis")
+def analysis():
+    if not os.path.exists("analysis.json"):
+        raise HTTPException(404, "Run train_model.py first")
+    return json.load(open("analysis.json"))

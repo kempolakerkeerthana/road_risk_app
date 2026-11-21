@@ -1,0 +1,235 @@
+{
+ "model": "HistGradientBoostingClassifier",
+ "train_rows": 39998,
+ "test_rows": 10000,
+ "model_scores": {
+  "Logistic Regression": 0.313,
+  "Random Forest": 0.305,
+  "Gradient Boosting": 0.342
+ },
+ "tuned_macro_f1": 0.342,
+ "accuracy": 0.761,
+ "best_params": {
+  "learning_rate": 0.1,
+  "max_iter": 100,
+  "max_leaf_nodes": 31
+ },
+ "per_class": {
+  "1": {
+   "precision": 0.11,
+   "recall": 0.11,
+   "f1-score": 0.11
+  },
+  "2": {
+   "precision": 0.84,
+   "recall": 0.88,
+   "f1-score": 0.86
+  },
+  "3": {
+   "precision": 0.39,
+   "recall": 0.34,
+   "f1-score": 0.36
+  },
+  "4": {
+   "precision": 0.14,
+   "recall": 0.02,
+   "f1-score": 0.04
+  }
+ },
+ "importance": {
+  "Weather_Condition_Fair": 0.0214,
+  "Traffic_Signal": 0.021,
+  "Weather_Condition_Clear": 0.0195,
+  "Humidity(%)": 0.019,
+  "Hour": 0.0165,
+  "State_SC": 0.0126,
+  "State_AZ": 0.0105,
+  "Weather_Condition_Overcast": 0.0097,
+  "Crossing": 0.0087,
+  "Temperature(F)": 0.0086
+ },
+ "confusion": [
+  [
+   10,
+   75,
+   2,
+   0
+  ],
+  [
+   71,
+   7027,
+   838,
+   31
+  ],
+  [
+   9,
+   1102,
+   565,
+   5
+  ],
+  [
+   1,
+   203,
+   55,
+   6
+  ]
+ ],
+ "rows": 49998,
+ "severity": {
+  "1": 435,
+  "2": 39833,
+  "3": 8406,
+  "4": 1324
+ },
+ "by_hour": {
+  "0": 717,
+  "1": 609,
+  "2": 564,
+  "3": 531,
+  "4": 1035,
+  "5": 1496,
+  "6": 2645,
+  "7": 3789,
+  "8": 3713,
+  "9": 2409,
+  "10": 2209,
+  "11": 2332,
+  "12": 2271,
+  "13": 2552,
+  "14": 2851,
+  "15": 3408,
+  "16": 3761,
+  "17": 3842,
+  "18": 2801,
+  "19": 1884,
+  "20": 1427,
+  "21": 1215,
+  "22": 1111,
+  "23": 826
+ },
+ "top_states": {
+  "CA": 11370,
+  "FL": 5589,
+  "TX": 3716,
+  "SC": 2459,
+  "NY": 2272,
+  "NC": 2198,
+  "PA": 2002,
+  "VA": 1941,
+  "MN": 1235,
+  "OR": 1167
+ },
+ "timezones": {
+  "US/Eastern": 23121,
+  "US/Pacific": 13486,
+  "US/Central": 10558,
+  "US/Mountain": 2781,
+  "Unknown": 52
+ },
+ "top_weather": {
+  "Fair": 16640,
+  "Mostly Cloudy": 6549,
+  "Clear": 5412,
+  "Cloudy": 5181,
+  "Partly Cloudy": 4476,
+  "Overcast": 2434,
+  "Light Rain": 2293,
+  "Scattered Clouds": 1364,
+  "Light Snow": 781,
+  "Fog": 678
+ },
+ "top_streets": {
+  "I-95 S": 513,
+  "I-95 N": 496,
+  "I-5 N": 494,
+  "I-10 E": 393,
+  "I-10 W": 340,
+  "I-5 S": 328,
+  "I-80 W": 231,
+  "I-80 E": 212,
+  "I-405 N": 209,
+  "I-75 N": 201
+ },
+ "night_share_by_weather": {
+  "Clear": 28.5,
+  "Cloudy": 40.5,
+  "Fair": 32.7,
+  "Light Rain": 33.0,
+  "Mostly Cloudy": 22.7,
+  "Overcast": 33.7,
+  "Partly Cloudy": 20.1,
+  "Scattered Clouds": 19.8
+ },
+ "rules": [
+  {
+   "if": "Crossing",
+   "then": "Traffic_Signal",
+   "support": 0.071,
+   "confidence": 0.619,
+   "lift": 4.18
+  },
+  {
+   "if": "Weather: Partly Cloudy",
+   "then": "Day",
+   "support": 0.071,
+   "confidence": 0.797,
+   "lift": 1.15
+  },
+  {
+   "if": "Weather: Mostly Cloudy",
+   "then": "Day",
+   "support": 0.101,
+   "confidence": 0.772,
+   "lift": 1.11
+  },
+  {
+   "if": "Crossing",
+   "then": "Day",
+   "support": 0.086,
+   "confidence": 0.745,
+   "lift": 1.08
+  },
+  {
+   "if": "Traffic_Signal",
+   "then": "Day",
+   "support": 0.109,
+   "confidence": 0.737,
+   "lift": 1.06
+  },
+  {
+   "if": "Station",
+   "then": "Day",
+   "support": 0.018,
+   "confidence": 0.722,
+   "lift": 1.04
+  },
+  {
+   "if": "Weather: Clear",
+   "then": "Day",
+   "support": 0.077,
+   "confidence": 0.715,
+   "lift": 1.03
+  },
+  {
+   "if": "Stop",
+   "then": "Day",
+   "support": 0.019,
+   "confidence": 0.691,
+   "lift": 1.0
+  },
+  {
+   "if": "Junction",
+   "then": "Day",
+   "support": 0.05,
+   "confidence": 0.681,
+   "lift": 0.98
+  },
+  {
+   "if": "Weather: Fair",
+   "then": "Day",
+   "support": 0.223,
+   "confidence": 0.671,
+   "lift": 0.97
+  }
+ ]
+}
