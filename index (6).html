@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Road Safety Officer Dashboard</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Segoe UI,Arial,sans-serif;background:#f1f5f9;color:#0f172a}
+header{position:sticky;top:0;z-index:5;background:#0f172a;color:#fff;padding:10px 22px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+header h1{font-size:18px;margin:0}header small{display:block;color:#94a3b8;font-size:11px}
+nav a{color:#fff;text-decoration:none;margin-left:6px;font-size:14px;padding:5px 10px;border-radius:6px;display:inline-block}nav a:hover,nav a.on{background:#2563eb}
+main{max-width:1000px;margin:18px auto;padding:0 14px}
+.card{background:#fff;border-radius:10px;padding:18px;margin-bottom:16px;box-shadow:0 1px 4px #0002}
+h2{margin:0 0 10px;font-size:19px}h3{margin:14px 0 6px;font-size:15px}
+label{display:block;font-size:12px;color:#475569;margin:8px 0 2px}
+input,select,button,textarea{font:inherit;padding:7px 9px;border:1px solid #cbd5e1;border-radius:6px;max-width:100%}
+button{background:#2563eb;color:#fff;border:0;cursor:pointer}button.alt{background:#64748b}button.red{background:#dc2626}button.sm{padding:3px 8px;font-size:12px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:0 12px}
+.checks label{display:inline-block;margin-right:14px;color:#0f172a;font-size:14px}.checks input{width:auto}
+.badge{display:inline-block;padding:6px 14px;border-radius:20px;color:#fff;font-weight:700}
+.s1,.OK,.Cleared{background:#16a34a}.s2{background:#ca8a04}.s3,.Acknowledged,.Medium{background:#ea580c}.s4,.Avoid,.High,.Sent{background:#dc2626}.Low{background:#16a34a}
+.pill{display:inline-block;padding:2px 9px;border-radius:12px;color:#fff;font-size:12px;font-weight:600}
+.warn{background:#fef3c7;border-left:4px solid #f59e0b;padding:8px 10px;margin-top:10px;font-size:14px}
+.info{background:#dbeafe;border-left:4px solid #2563eb;padding:8px 10px;margin:10px 0;font-size:14px}
+.good{background:#dcfce7;border-left:4px solid #16a34a;padding:8px 10px;margin:10px 0;font-size:14px}
+.row{display:flex;align-items:center;gap:8px;margin:3px 0;font-size:13px}.lab{width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:none}
+.bar{flex:1;background:#e2e8f0;border-radius:4px;height:14px}.bar i{display:block;height:100%;background:#2563eb;border-radius:4px}.bar i.b2{background:#f59e0b}
+table{border-collapse:collapse;width:100%;font-size:13px}th,td{border-bottom:1px solid #e2e8f0;padding:6px;text-align:left;vertical-align:top}
+.msg{color:#dc2626;font-size:14px;margin-top:8px}.small{font-size:12px;color:#64748b}
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:18px}
+details{border:1px solid #e2e8f0;border-radius:8px;margin:10px 0;padding:6px 12px}summary{cursor:pointer;font-weight:600;padding:4px 0}
+.sel select{margin:0 6px 6px 0}.hosp{border:1px solid #e2e8f0;border-radius:8px;padding:10px;margin:10px 0}
+.tab{display:none}.tab.on{display:block}
+</style></head><body>
+<header><div><h1>Road Safety Officer Dashboard<small>Road accident severity, traffic, routes, emergency help and alerts</small></h1></div>
+<nav id="nav"><a href="#" data-t="predict" class="on">Predict</a><a href="#" data-t="analysis">Analysis</a><a href="#" data-t="traffic">Traffic</a><a href="#" data-t="route">Route advice</a><a href="#" data-t="emergency">Emergency</a><a href="#" data-t="alerts">Alerts</a></nav></header>
+<main>
+
+<!-- 1. PREDICT -->
+<section id="tab-predict" class="tab on card"><h2>Predict accident severity</h2>
+ <div class="info"><b>Severity means impact on traffic:</b> 1 = short delay, 2 = moderate delay, 3 = long delay, 4 = very long delay (as defined in the US Accidents data).</div>
+ <div class="grid">
+  <div><label>Area (optional)</label><select id="p_area"></select></div>
+  <div><label>Hour (0-23)</label><input id="hour" type="number" min="0" max="23" value="23"></div>
+  <div><label>Day</label><select id="day"><option value="0">Mon</option><option value="1">Tue</option><option value="2">Wed</option><option value="3">Thu</option><option value="4">Fri</option><option value="5" selected>Sat</option><option value="6">Sun</option></select></div>
+  <div><label>Temperature (F)</label><input id="temp" type="number" value="60"></div>
+  <div><label>Humidity (%)</label><input id="hum" type="number" value="70"></div>
+  <div><label>Visibility (miles)</label><input id="vis" type="number" value="10"></div>
+  <div><label>Wind speed (mph)</label><input id="wind" type="number" value="0"></div>
+  <div><label>Precipitation (in)</label><input id="prec" type="number" step="0.01" value="0"></div>
+  <div><label>Weather</label><select id="weather"></select></div>
+  <div><label>State</label><select id="state"></select></div>
+ </div>
+ <div class="checks" style="margin-top:10px">
+  <label><input type="checkbox" id="is_night" checked> Night</label><label><input type="checkbox" id="junction"> Junction</label>
+  <label><input type="checkbox" id="traffic_signal"> Traffic signal</label><label><input type="checkbox" id="crossing"> Crossing</label>
+  <label><input type="checkbox" id="stop"> Stop sign</label><label><input type="checkbox" id="railway"> Railway</label></div>
+ <div id="stnote" class="warn" style="display:none">The model was trained on US accident data only and has no Indian data. For an Indian state the location is ignored and the score is an average over US locations. Time, weather and road features still count.</div>
+ <p><button id="pred">Predict</button> <button id="whatif" class="alt">What-if table</button></p>
+ <div id="result"></div><div id="wi"></div>
+</section>
+
+<!-- 2. ANALYSIS (dashboard + analysis) -->
+<div id="tab-analysis" class="tab">
+ <section class="card"><h2>Dashboard</h2><div id="cards" class="small"></div><div id="dchart"></div>
+  <h3>Saved predictions</h3><div id="hist"></div></section>
+ <section class="card"><h2>Data and model analysis</h2><div id="an" class="small">Loading...</div></section>
+</div>
+
+<!-- 3. TRAFFIC -->
+<section id="tab-traffic" class="tab card"><h2>Traffic patterns</h2>
+ <p class="small">Typical delay (minutes) by hour at a junction. Sample data. Choose a place:</p>
+ <div id="tr_sel" class="sel"></div><div id="tr_out"></div>
+ <h3>Check a driver's claim</h3>
+ <p class="small">Compare the delay a driver says they faced with the typical delay at that junction and time.</p>
+ <div class="grid">
+  <div><label>Driver name</label><input id="c_driver"></div>
+  <div><label>Day type</label><select id="c_day"><option>Weekday</option><option>Saturday</option><option>Sunday</option></select></div>
+  <div><label>From hour</label><input id="c_from" type="number" min="0" max="23" value="9"></div>
+  <div><label>To hour</label><input id="c_to" type="number" min="0" max="23" value="10"></div>
+  <div><label>Claimed delay (min)</label><input id="c_delay" type="number" min="0" value="45"></div>
+ </div>
+ <p><button id="c_go">Check claim</button></p><div id="c_out"></div>
+ <h3>Claims checked so far</h3><div id="c_list"></div>
+</section>
+
+<!-- 4. ROUTE ADVICE -->
+<section id="tab-route" class="tab card"><h2>Route advice by weather</h2>
+ <p class="small">Which route to take in this weather. This reads stored route data; it does not use the prediction model.</p>
+ <div id="ro_sel" class="sel"></div>
+ <label>Weather</label><select id="ro_weather"></select>
+ <p><button id="ro_go">Get advice</button></p><div id="ro_out"></div>
+</section>
+
+<!-- 5. EMERGENCY -->
+<section id="tab-emergency" class="tab card"><h2>Emergency help</h2>
+ <div class="info"><b>National emergency number: 112 &nbsp;|&nbsp; Ambulance: 108</b></div>
+ <p class="small">Choose state, district and area to see nearby hospitals, doctors, ambulances and the police station. All names and phone numbers below are <b>sample data</b>.</p>
+ <div id="em_sel" class="sel"></div><div id="em_out"></div>
+</section>
+
+<!-- 6. ALERTS -->
+<section id="tab-alerts" class="tab card"><h2>Alerts to traffic police stations</h2>
+ <h3>Send an alert</h3>
+ <div id="al_sel" class="sel"></div>
+ <div class="grid"><div><label>Priority</label><select id="al_pri"><option>High</option><option>Medium</option><option>Low</option></select></div></div>
+ <label>Message</label><textarea id="al_msg" rows="2" style="width:100%" placeholder="Example: Heavy traffic expected at this junction. Please send officers to clear it."></textarea>
+ <p><button id="al_go">Send alert</button> <span id="al_res" class="small"></span></p>
+ <h3>Station dashboard</h3>
+ <label>Police station</label><select id="al_station"></select>
+ <div id="al_list"></div>
+</section>
+</main>
+
+<script>
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const WEATHER=["Fair","Clear","Mostly Cloudy","Partly Cloudy","Cloudy","Overcast","Light Rain","Rain","Fog","Light Snow","Haze","Thunderstorm"];
+const STATES=["CA","FL","TX","SC","NY","NC","PA","VA","MN","OR","AZ","IL","GA","OH","MI","WA"];
+const INDIA=["Andhra Pradesh","Arunachal Pradesh","Assam","Bihar","Chhattisgarh","Delhi","Goa","Gujarat","Haryana","Himachal Pradesh","Jharkhand","Karnataka","Kerala","Madhya Pradesh","Maharashtra","Manipur","Meghalaya","Mizoram","Nagaland","Odisha","Punjab","Rajasthan","Sikkim","Tamil Nadu","Telangana","Tripura","Uttar Pradesh","Uttarakhand","West Bengal"];
+let LOCS=[];
+
+async function api(path,method="GET",body){
+  const r=await fetch(path,{method,headers:{"Content-Type":"application/json"},body:body?JSON.stringify(body):undefined});
+  const d=await r.json().catch(()=>({}));
+  if(!r.ok) throw new Error(typeof d.detail==="string"?d.detail:"Check your inputs");
+  return d;
+}
+const fail=(el,e)=>{el.innerHTML=`<div class="msg">${esc(e.message)}</div>`;};
+function bars(data,title,fmt){
+  const e=Object.entries(data),max=Math.max(...e.map(x=>x[1]),1);
+  return (title?`<h3>${title}</h3>`:"")+e.map(([k,v])=>`<div class="row"><span class="lab" title="${esc(k)}">${esc(k)}</span><div class="bar"><i style="width:${v/max*100}%"></i></div><span>${fmt?fmt(v):v}</span></div>`).join("");
+}
+const pill=t=>`<span class="pill ${esc(t)}">${esc(t)}</span>`;
+const uniq=a=>[...new Set(a)];
+
+// ---------- state -> district -> area (-> junction) selectors ----------
+function cascade(box,withJunction,onChange){
+  box.innerHTML=`<select class="st"></select><select class="di"></select><select class="ar"></select>`+(withJunction?`<select class="ju"></select>`:"");
+  const st=box.querySelector(".st"),di=box.querySelector(".di"),ar=box.querySelector(".ar"),ju=box.querySelector(".ju");
+  const fill=(sel,items)=>{sel.innerHTML=items.map(([v,t])=>`<option value="${esc(v)}">${esc(t)}</option>`).join("");};
+  const fillDistricts=()=>fill(di,uniq(LOCS.filter(l=>l.state===st.value).map(l=>l.district)).map(d=>[d,d]));
+  const fillAreas=()=>fill(ar,LOCS.filter(l=>l.state===st.value&&l.district===di.value).map(l=>[l.id,l.area]));
+  async function areaChanged(){
+    if(ju){try{fill(ju,(await api("/junctions?location_id="+ar.value)).map(j=>[j.id,j.name]));}catch(e){ju.innerHTML="";}}
+    if(onChange)onChange();
+  }
+  fill(st,uniq(LOCS.map(l=>l.state)).map(s=>[s,s]));
+  st.onchange=()=>{fillDistricts();fillAreas();areaChanged();};
+  di.onchange=()=>{fillAreas();areaChanged();};
+  ar.onchange=areaChanged; if(ju)ju.onchange=()=>onChange&&onChange();
+  box.get=()=>({location_id:+ar.value,junction_id:ju&&ju.value?+ju.value:null});
+  box.set=async id=>{const l=LOCS.find(x=>x.id===id);if(!l)return;st.value=l.state;fillDistricts();di.value=l.district;fillAreas();ar.value=l.id;await areaChanged();};
+  fillDistricts();fillAreas();return areaChanged();
+}
+
+// ---------- tabs ----------
+document.querySelectorAll("nav a[data-t]").forEach(a=>a.onclick=e=>{e.preventDefault();showTab(a.dataset.t);});
+function showTab(t){
+  document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("on",x.id==="tab-"+t));
+  document.querySelectorAll("nav a[data-t]").forEach(a=>a.classList.toggle("on",a.dataset.t===t));
+  if(t==="analysis"){loadDash();loadAnalysis();}
+  if(t==="traffic"){loadTraffic();loadClaims();}
+  if(t==="alerts")loadAlerts();
+  window.scrollTo(0,0);
+}
+
+// ---------- 1. predict + what-if ----------
+$("weather").innerHTML=WEATHER.map(w=>`<option>${w}</option>`).join("");
+$("state").innerHTML=`<optgroup label="US states">${STATES.map(w=>`<option>${w}</option>`).join("")}</optgroup><optgroup label="Indian states">${INDIA.map(w=>`<option>${w}</option>`).join("")}</optgroup>`;
+$("state").onchange=()=>{$("stnote").style.display=INDIA.includes($("state").value)?"block":"none";};
+const ids=["is_night","junction","traffic_signal","crossing","stop","railway"];
+function inputs(){
+  const o={hour:+$("hour").value,day_of_week:+$("day").value,temperature:+$("temp").value,humidity:+$("hum").value,
+    visibility:+$("vis").value,wind_speed:+$("wind").value,precipitation:+$("prec").value,weather:$("weather").value,state:$("state").value};
+  if($("p_area").value)o.location_id=+$("p_area").value;
+  ids.forEach(i=>o[i]=$(i).checked?1:0);return o;
+}
+const NAMES={1:"Severity 1 - short delay",2:"Severity 2 - moderate delay",3:"Severity 3 - long delay",4:"Severity 4 - very long delay"};
+let lastPred=null;
+$("pred").onclick=async()=>{
+  try{
+    const inp=inputs(),r=await api("/predict","POST",{...inp,save:1});lastPred={r,inp};
+    const risky=r.severity>=3||r.high_severity_risk>=0.5;
+    $("result").innerHTML=`<h3>Result</h3><span class="badge s${r.severity}">${NAMES[r.severity]}</span> &nbsp; confidence ${Math.round(r.confidence*100)}%`+
+      bars(Object.fromEntries(Object.entries(r.probabilities).map(([k,v])=>[NAMES[k],Math.round(v*100)])),"",v=>v+"%")+
+      (r.low_confidence?`<div class="warn">Low confidence: no single severity is clearly likely. Treat this as a rough guide only.</div>`:"")+
+      (risky?`<div class="warn"><b>High chance of a long traffic delay.</b> ${inp.location_id?`<button class="sm red" id="mkalert">Send alert to the police station</button>`:"Choose an Area above to send an alert."}</div>`:"")+
+      `<div class="small">Saved. See it under Analysis. Percentages are model scores, not real-world probabilities.</div>`;
+    if($("mkalert"))$("mkalert").onclick=prefillAlert;
+  }catch(e){fail($("result"),e);}
+};
+$("whatif").onclick=async()=>{
+  const b=inputs(),sc=[["Your current inputs",{}],["Daytime (hour 12)",{hour:12,is_night:0}],["Night (hour 23)",{hour:23,is_night:1}],
+    ["Rush hour (hour 17)",{hour:17,is_night:0}],["Fog, visibility 1 mile",{weather:"Fog",visibility:1}],["Rain",{weather:"Rain"}],
+    ["Traffic signal present",{traffic_signal:1}],["No junction/signal/crossing",{junction:0,traffic_signal:0,crossing:0}]];
+  try{
+    const res=[];for(const [n,c] of sc)res.push([n,await api("/predict","POST",{...b,...c,save:0})]);
+    const base=res[0][1].high_severity_risk;
+    $("wi").innerHTML=`<h3>What-if: chance of a long delay (Severity 3 or 4)</h3><table><tr><th>Scenario</th><th>Risk</th><th>Change</th><th>Most likely</th></tr>`+
+      res.map(([n,r],i)=>{const d=Math.round((r.high_severity_risk-base)*100);
+        return `<tr><td>${n}</td><td>${Math.round(r.high_severity_risk*100)}%</td><td>${i?(d>0?"+":"")+d+" pts":"-"}</td><td><span class="badge s${r.severity}" style="padding:2px 8px">${r.severity}</span></td></tr>`}).join("")+
+      `</table><div class="small">Shows how the model's score moves when one thing changes. It shows model behaviour, not proven cause.</div>`;
+  }catch(e){fail($("wi"),e);}
+};
+async function prefillAlert(){
+  const {r,inp}=lastPred;showTab("alerts");await alSel.set(inp.location_id);
+  $("al_msg").value=`Predicted ${NAMES[r.severity]} (${Math.round(r.high_severity_risk*100)}% chance of a long delay) for hour ${inp.hour}, weather ${inp.weather}. Please be ready to manage traffic.`;
+}
+
+// ---------- 2. dashboard + analysis ----------
+async function loadDash(){
+  try{
+    const [s,h]=await Promise.all([api("/stats"),api("/history")]);
+    const by=s.by_severity,tot=Object.values(by).reduce((a,b)=>a+b,0);
+    $("cards").innerHTML=`<b style="font-size:22px;color:#0f172a">${tot}</b> saved predictions`;
+    $("dchart").innerHTML=tot?bars(Object.fromEntries([1,2,3,4].map(k=>["Severity "+k,by[k]||0])),"Saved predictions by severity"):"<p>No saved predictions yet. Make one on the Predict page.</p>";
+    $("hist").innerHTML=h.length?`<table><tr><th>When</th><th>Area</th><th>Severity</th><th>Conf.</th><th>Inputs</th><th>Note</th><th></th></tr>`+h.map(r=>{const i=r.inputs;
+      return `<tr><td>${esc(r.created)}</td><td>${esc(r.area||"-")}</td><td><span class="badge s${r.severity}" style="padding:2px 8px">${r.severity}</span></td><td>${Math.round(r.confidence*100)}%</td>
+      <td class="small">hr ${i.hour}, ${esc(i.weather)}</td><td><input value="${esc(r.note)}" data-id="${r.id}" class="note" style="width:120px"></td>
+      <td><button class="red sm" data-del="${r.id}">Delete</button></td></tr>`}).join("")+"</table>":"<p>Nothing saved yet.</p>";
+    document.querySelectorAll(".note").forEach(n=>n.onchange=()=>api("/history/"+n.dataset.id,"PUT",{note:n.value}));
+    document.querySelectorAll("[data-del]").forEach(b=>b.onclick=async()=>{await api("/history/"+b.dataset.del,"DELETE");loadDash();});
+  }catch(e){fail($("cards"),e);}
+}
+async function loadAnalysis(){
+  try{
+    const a=await api("/analysis");
+    $("an").innerHTML=`<p>Dataset: ${a.rows.toLocaleString()} US accident records. Model: ${esc(a.model)}. Test accuracy ${a.accuracy}, macro-F1 ${a.tuned_macro_f1}. Open a group below.</p>
+    <details open><summary>Severity and time of day</summary><div class="two"><div>${bars(a.severity,"Severity counts")}</div><div>${bars(a.by_hour,"Accidents by hour of day")}</div>
+      <div>${bars(a.night_share_by_weather,"Share of accidents at night, by weather (%)",v=>v+"%")}</div></div></details>
+    <details><summary>Places and weather</summary><div class="two"><div>${bars(a.top_states,"Top 10 states")}</div><div>${bars(a.timezones,"Accidents by timezone")}</div>
+      <div>${bars(a.top_weather,"Top 10 weather conditions")}</div><div>${bars(a.top_streets,"Top 10 streets")}</div></div></details>
+    <details><summary>Model results</summary><div class="two"><div>${bars(a.model_scores,"Model comparison (macro-F1)")}</div>
+      <div>${bars(Object.fromEntries(Object.entries(a.importance).map(([k,v])=>[k,+(v*1000).toFixed(1)])),"Main risk factors (importance x1000)")}</div></div>
+      <h3>Per-class result on the test set</h3><table><tr><th>Severity</th><th>Precision</th><th>Recall</th><th>F1</th></tr>`+
+      Object.entries(a.per_class).map(([k,v])=>`<tr><td>${k}</td><td>${v.precision}</td><td>${v.recall}</td><td>${v["f1-score"]}</td></tr>`).join("")+`</table>
+      <h3>Confusion matrix (rows = actual, columns = predicted)</h3><table><tr><th></th>${[1,2,3,4].map(k=>`<th>${k}</th>`).join("")}</tr>`+
+      a.confusion.map((r,i)=>`<tr><th>${i+1}</th>${r.map(v=>`<td>${v}</td>`).join("")}</tr>`).join("")+`</table></details>
+    <details><summary>Patterns found in past accidents ("if A then B")</summary><table><tr><th>If</th><th>Then</th><th>Confidence</th><th>Lift</th></tr>`+
+      a.rules.map(r=>`<tr><td>${esc(r.if)}</td><td>${esc(r.then)}</td><td>${Math.round(r.confidence*100)}%</td><td>${r.lift}</td></tr>`).join("")+`</table>
+      <p class="small">Lift near 1 means the pattern is no stronger than chance (most accidents happen in daylight anyway).</p></details>
+    <div class="warn">Limits: Severity 1 and 4 are rare in the data, so the model is weak on them. Scores are relative risk, not real-world probabilities. Results show links in this dataset, not proven causes.</div>`;
+  }catch(e){$("an").innerHTML=`<div class="msg">${esc(e.message)}. Run train_model.py first.</div>`;}
+}
+
+// ---------- 3. traffic + claim check ----------
+let trSel,roSel,emSel,alSel;
+async function loadTraffic(){
+  const g=trSel.get();if(!g.junction_id){$("tr_out").innerHTML="";return;}
+  try{
+    const t=await api("/traffic?junction_id="+g.junction_id),s=t.summary,D=["Weekday","Saturday","Sunday"];
+    const max=Math.max(...D.flatMap(d=>t.series[d]),1);
+    $("tr_out").innerHTML=`<h3>${esc(t.junction)} (${esc(t.area)}, ${esc(t.district)})</h3><table><tr><th>Day type</th><th>Busiest hour</th><th>Delay at that hour</th><th>Average delay</th></tr>`+
+      D.map(d=>`<tr><td>${d}</td><td>${s[d].peak_hour}:00</td><td>${s[d].peak_delay} min</td><td>${s[d].average} min</td></tr>`).join("")+`</table>
+      <h3>Delay by hour: weekday (blue) vs Saturday (orange)</h3>`+
+      t.series.Weekday.map((v,h)=>`<div class="row"><span class="lab" style="width:50px">${h}:00</span><div class="bar"><i style="width:${v/max*100}%"></i></div><span style="width:46px">${v}</span>
+        <div class="bar"><i class="b2" style="width:${t.series.Saturday[h]/max*100}%"></i></div><span style="width:46px">${t.series.Saturday[h]}</span></div>`).join("")+
+      `<div class="small">Sample data for the demo. Delay in minutes.</div>`;
+  }catch(e){fail($("tr_out"),e);}
+}
+$("c_go").onclick=async()=>{
+  const g=trSel.get();
+  try{
+    const r=await api("/claims","POST",{junction_id:g.junction_id,driver:$("c_driver").value.trim(),day_type:$("c_day").value,
+      start_hour:+$("c_from").value,end_hour:+$("c_to").value,claimed_delay_min:+$("c_delay").value});
+    $("c_out").innerHTML=`<div class="${r.consistent?"good":"warn"}"><b>${esc(r.verdict)}</b><br>Claimed delay ${r.claimed_delay_min} min, typical delay ${r.typical_delay_min} min.</div>`;
+    loadClaims();
+  }catch(e){fail($("c_out"),e);}
+};
+async function loadClaims(){
+  try{
+    const c=await api("/claims");
+    $("c_list").innerHTML=c.length?`<table><tr><th>Driver</th><th>Junction</th><th>When</th><th>Claimed</th><th>Typical</th><th>Verdict</th><th></th></tr>`+c.map(x=>
+      `<tr><td>${esc(x.driver)}</td><td>${esc(x.junction)}</td><td>${esc(x.day_type)} ${x.start_hour}-${x.end_hour}h</td><td>${x.claimed} min</td><td>${x.typical} min</td><td>${esc(x.verdict)}</td>
+      <td><button class="red sm" data-cd="${x.id}">Delete</button></td></tr>`).join("")+"</table>":"<p class='small'>No claims checked yet.</p>";
+    document.querySelectorAll("[data-cd]").forEach(b=>b.onclick=async()=>{await api("/claims/"+b.dataset.cd,"DELETE");loadClaims();});
+  }catch(e){fail($("c_list"),e);}
+}
+
+// ---------- 4. route advice ----------
+$("ro_go").onclick=async()=>{
+  const g=roSel.get();
+  try{
+    const r=await api(`/route-advice?location_id=${g.location_id}&weather=${encodeURIComponent($("ro_weather").value)}`);
+    $("ro_out").innerHTML=`<h3>${esc(r.area)}, ${esc(r.district)} in ${esc(r.weather)}</h3><div class="info">${esc(r.advice)}</div>
+      <div class="good"><b>Recommended route: ${esc(r.recommended)}</b></div><table><tr><th>Route</th><th>Via</th><th>Extra time</th><th>Water logging</th><th>Status</th></tr>`+
+      r.routes.map(x=>`<tr><td>${esc(x.route)}${x.is_main?" (main)":""}</td><td>${esc(x.via)}</td><td>${x.extra_minutes} min</td><td>${x.waterlogging_prone?"Prone":"No"}</td><td>${pill(x.status)}</td></tr>`).join("")+`</table>`;
+  }catch(e){fail($("ro_out"),e);}
+};
+
+// ---------- 5. emergency ----------
+async function loadEmergency(){
+  const g=emSel.get();
+  try{
+    const e=await api("/emergency?location_id="+g.location_id);
+    $("em_out").innerHTML=`<h3>${esc(e.area)}, ${esc(e.district)}</h3>`+e.hospitals.map(h=>`<div class="hosp"><b>${esc(h.hospital)}</b> <span class="small">(${esc(h.kind)})</span> &nbsp; Phone: <b>${esc(h.phone)}</b>
+      <div class="two"><div><h3>Doctors</h3>${h.doctors.map(d=>`<div>${esc(d.name)} - ${esc(d.speciality)}<br><span class="small">${esc(d.phone)}</span></div>`).join("")}</div>
+      <div><h3>Ambulances</h3>${h.ambulances.map(a=>`<div>${esc(a.vehicle)} - ${esc(a.phone)}</div>`).join("")}</div></div></div>`).join("")+
+      `<div class="hosp"><b>Police</b>${e.police_stations.map(s=>`<div>${esc(s.name)} - ${esc(s.phone)}</div>`).join("")}</div>`;
+  }catch(e){fail($("em_out"),e);}
+}
+
+// ---------- 6. alerts ----------
+$("al_go").onclick=async()=>{
+  const g=alSel.get();
+  try{
+    const r=await api("/alerts","POST",{junction_id:g.junction_id,priority:$("al_pri").value,message:$("al_msg").value.trim()});
+    $("al_res").textContent="Alert sent to "+r.station;$("al_msg").value="";
+    const st=[...$("al_station").options].find(o=>o.text.startsWith(r.station));if(st)$("al_station").value=st.value;
+    loadAlerts();
+  }catch(e){$("al_res").innerHTML=`<span class="msg">${esc(e.message)}</span>`;}
+};
+$("al_station").onchange=loadAlerts;
+async function loadAlerts(){
+  const sid=$("al_station").value;if(!sid)return;
+  try{
+    const a=await api("/alerts?station_id="+sid);
+    $("al_list").innerHTML=a.length?`<table><tr><th>When</th><th>Junction</th><th>Priority</th><th>Message</th><th>Status</th><th></th></tr>`+a.map(x=>
+      `<tr><td>${esc(x.created)}</td><td>${esc(x.junction)}</td><td>${pill(x.priority)}</td><td>${esc(x.message)}</td><td>${pill(x.status)}</td>
+      <td><button class="sm alt" data-st="Acknowledged" data-a="${x.id}">Acknowledge</button> <button class="sm" data-st="Cleared" data-a="${x.id}">Clear</button> <button class="sm red" data-ad="${x.id}">Delete</button></td></tr>`).join("")+"</table>":"<p class='small'>No alerts for this station.</p>";
+    document.querySelectorAll("[data-st]").forEach(b=>b.onclick=async()=>{await api("/alerts/"+b.dataset.a,"PUT",{status:b.dataset.st});loadAlerts();});
+    document.querySelectorAll("[data-ad]").forEach(b=>b.onclick=async()=>{await api("/alerts/"+b.dataset.ad,"DELETE");loadAlerts();});
+  }catch(e){fail($("al_list"),e);}
+}
+
+// ---------- start ----------
+(async()=>{
+  try{
+    LOCS=await api("/locations");
+    $("p_area").innerHTML=`<option value="">(none)</option>`+LOCS.map(l=>`<option value="${l.id}">${esc(l.area)}, ${esc(l.district)}</option>`).join("");
+    trSel=$("tr_sel");roSel=$("ro_sel");emSel=$("em_sel");alSel=$("al_sel");
+    await Promise.all([cascade(trSel,true,loadTraffic),cascade(roSel,false),cascade(emSel,false,loadEmergency),cascade(alSel,true)]);
+    $("ro_weather").innerHTML=(await api("/weather-types")).map(w=>`<option>${esc(w)}</option>`).join("");
+    $("al_station").innerHTML=(await api("/stations")).map(s=>`<option value="${s.id}">${esc(s.name)} (${esc(s.district)})</option>`).join("");
+    loadEmergency();
+  }catch(e){document.querySelector("main").insertAdjacentHTML("afterbegin",`<div class="msg card">${esc(e.message)}</div>`);}
+})();
+</script></body></html>
