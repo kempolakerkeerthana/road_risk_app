@@ -1,28 +1,43 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
-import joblib, pandas as pd, sqlite3, json, os
+import joblib, pandas as pd, json, os
 import features as F
+from database import db                       # shared database (tables + sample data)
+import traffic, route_advice, emergency, alerts, incidents, nearby, trip
 
 model, cols = joblib.load("severity_model.pkl")
 WEATHERS = F.known(cols, "Weather_Condition_")
 STATES = F.known(cols, "State_")
 
-app = FastAPI(title="Road Risk API")          # /docs stays open (sir's steps 6 and 12)
+DESCRIPTION = """
+Predicts how serious a road accident is likely to be (**Severity 1 = minor to 4 = most serious**)
+from the time, weather, location and road features.
 
-# ---- database (no login: one shared prediction history) ----
-db = sqlite3.connect("app.db", check_same_thread=False)
-db.execute("""CREATE TABLE IF NOT EXISTS predictions(id INTEGER PRIMARY KEY, inputs TEXT,
-              severity INT, confidence REAL, note TEXT DEFAULT '',
-              created TEXT DEFAULT CURRENT_TIMESTAMP)""")
+Severity means the impact on traffic: **1 = short delay ... 4 = long delay** (as defined in the US Accidents dataset).
 
+* **Predict / Dashboard / Analysis** - the ML model, saved predictions and results from the training run.
+* **Traffic** - weekday, Saturday and Sunday traffic by junction, and a driver claim check.
+* **Route Advice** - which route to take in rain, fog or storm.
+* **Emergency** - nearby hospitals, doctors, ambulances and police station.
+* **Alerts** - the Road Safety Officer sends alerts to a traffic police station.
+* **Incidents / Drivers** - report construction, accidents or road damage; nearby drivers get a message.
+* **Trip** - for long drives: restaurants and hotels along the route, plus warnings.
+* **Nearby** - nearest area, restaurants, hotels and mechanics to a GPS position.
+
+The model was trained on US accident data (50,000 records). Scores are relative risk, not real-world probabilities.
+"""
+app = FastAPI(title="Road Accident Severity Prediction API", description=DESCRIPTION, version="2.0.0")
+for r in (traffic.router, route_advice.router, emergency.router, alerts.router,
+          incidents.router, nearby.router, trip.router):
+    app.include_router(r)
 
 # ---- home page + health check ----
 @app.get("/", include_in_schema=False)
 def home():
     return FileResponse("index.html")
 
-@app.get("/health")
+@app.get("/health", tags=["System"])
 def health():
     return {"status": "ok", "model_classes": [int(c) for c in model.classes_]}
 
@@ -44,9 +59,14 @@ class Accident(BaseModel):
     stop: int = 0
     railway: int = 0
     is_night: int = 0
+    location_id: int | None = None                # area the prediction is for (optional)
     save: int = 1                                 # 0 = what-if only, do not store
 
-@app.post("/predict")
+    model_config = {"json_schema_extra": {"example": {
+        "hour": 23, "day_of_week": 5, "temperature": 60, "humidity": 70, "visibility": 10,
+        "weather": "Fog", "state": "CA", "is_night": 1, "junction": 0, "traffic_signal": 0, "save": 0}}}
+
+@app.post("/predict", tags=["Prediction"], summary="Predict accident severity")
 def predict(a: Accident):
     raw = pd.DataFrame([{
         "Hour": a.hour, "DayOfWeek": a.day_of_week, "Temperature(F)": a.temperature,
@@ -69,8 +89,10 @@ def predict(a: Accident):
            "high_severity_risk": round(probs.get(3, 0) + probs.get(4, 0), 2),
            "low_confidence": bool(p.max() < 0.5)}
     if a.save:
-        db.execute("INSERT INTO predictions(inputs,severity,confidence) VALUES(?,?,?)",
-                   (a.model_dump_json(), out["severity"], out["confidence"]))
+        if a.location_id and not db.execute("SELECT 1 FROM locations WHERE id=?", (a.location_id,)).fetchone():
+            raise HTTPException(400, "Unknown area")
+        db.execute("INSERT INTO predictions(location_id,inputs,severity,confidence) VALUES(?,?,?,?)",
+                   (a.location_id, a.model_dump_json(), out["severity"], out["confidence"]))
         db.commit()
     return out
 
@@ -79,32 +101,34 @@ def predict(a: Accident):
 class Note(BaseModel):
     note: str
 
-@app.get("/history")
+@app.get("/history", tags=["Dashboard"])
 def history():
-    rows = db.execute("SELECT id,inputs,severity,confidence,note,created FROM predictions ORDER BY id DESC").fetchall()
-    return [{"id": r[0], "inputs": json.loads(r[1]), "severity": r[2],
-             "confidence": r[3], "note": r[4], "created": r[5]} for r in rows]
+    rows = db.execute("""SELECT p.id, p.inputs, p.severity, p.confidence, p.note, p.created, l.area, l.district
+                         FROM predictions p LEFT JOIN locations l ON l.id = p.location_id
+                         ORDER BY p.id DESC""").fetchall()
+    return [{"id": r[0], "inputs": json.loads(r[1]), "severity": r[2], "confidence": r[3],
+             "note": r[4], "created": r[5], "area": r[6], "district": r[7]} for r in rows]
 
-@app.put("/history/{hid}")
+@app.put("/history/{hid}", tags=["Dashboard"])
 def update(hid: int, n: Note):
     db.execute("UPDATE predictions SET note=? WHERE id=?", (n.note, hid))
     db.commit()
     return {"message": "Updated"}
 
-@app.delete("/history/{hid}")
+@app.delete("/history/{hid}", tags=["Dashboard"])
 def delete(hid: int):
     db.execute("DELETE FROM predictions WHERE id=?", (hid,))
     db.commit()
     return {"message": "Deleted"}
 
-@app.get("/stats")
+@app.get("/stats", tags=["Dashboard"])
 def stats():
     rows = db.execute("SELECT severity, COUNT(*) FROM predictions GROUP BY severity").fetchall()
     return {"by_severity": {r[0]: r[1] for r in rows}}
 
 
 # ---- analysis page data (made by train_model.py from the notebook's analysis) ----
-@app.get("/analysis")
+@app.get("/analysis", tags=["Analysis"])
 def analysis():
     if not os.path.exists("analysis.json"):
         raise HTTPException(404, "Run train_model.py first")
