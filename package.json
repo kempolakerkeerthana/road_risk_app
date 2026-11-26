@@ -1,9 +1,0 @@
-{
-  "name": "road-accident-severity-app",
-  "version": "3.0.0",
-  "description": "Road Accident Severity Prediction - Node.js (Express) + MySQL, ML prediction in Python",
-  "main": "server.js",
-  "scripts": { "start": "node server.js" },
-  "engines": { "node": ">=18" },
-  "dependencies": { "express": "^4.19.2", "mysql2": "^3.9.7" }
-}
